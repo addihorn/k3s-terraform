@@ -1,0 +1,5 @@
+provisioning/output/
+output/
+.terraform*
+*.tfstate*
+**.pem
