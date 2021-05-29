@@ -10,4 +10,12 @@ data "template_file" "user_data" {
 resource "libvirt_cloudinit_disk" "commoninit" {
   name= "k3s-commininit.iso"
   user_data = data.template_file.user_data.rendered
+  pool = "ssd"
+}
+
+resource "libvirt_volume" "base-disk-image" {
+  name = "k3s-base-image"
+  source = "https://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-20201217.0.x86_64.qcow2"
+  format = "qcow2"
+  pool = "ssd"
 }

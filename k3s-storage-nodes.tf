@@ -1,34 +1,37 @@
 
-variable "node_count" {
+variable "storage_node_count" {
   type = number
   default = 1
 }
 
-resource "libvirt_volume" "k3s-node-disk" {
-  count = var.node_count
-  name = "kube-node-${count.index +1}"
+resource "libvirt_volume" "k3s-storage-node-disk" {
+  count = var.storage_node_count
+  name = "kube-storage-node-${count.index +1}"
   pool = "ssd"
+#  source = "https://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-20201217.0.x86_64.qcow2"
   format = "qcow2"
+# 50GB Drive per Node
+  size = 50000000000
   base_volume_id = libvirt_volume.base-disk-image.id
 }
 
 
 # Create Host for Master
 # Define KVM domain to create
-resource "libvirt_domain" "kube-node" {
-  count  = var.node_count
-  name   = "kube-node-${count.index + 1}"
-  memory = "10000"
-  vcpu   = 2
+resource "libvirt_domain" "kube-storage-node" {
+  count  = var.storage_node_count
+  name   = "kube-storage-node-${count.index + 1}"
+  memory = "5120"
+  vcpu   = 1
  
   network_interface {
     network_name = "default"
-    addresses = ["192.168.122.${count.index + 51}"]
+    addresses = ["192.168.122.${count.index + 61}"]
     wait_for_lease = true
   }
  
   disk {
-    volume_id = libvirt_volume.k3s-node-disk[count.index].id
+    volume_id = libvirt_volume.k3s-storage-node-disk[count.index].id
   }
  
   cloudinit = libvirt_cloudinit_disk.commoninit.id
@@ -60,7 +63,8 @@ resource "libvirt_domain" "kube-node" {
       groups = ["k3s_nodes"]
       extra_vars = {
         k3s_token = "${var.k3s_agent_token}"
-        k3s_version ="${var.k3s_version}" 
+        k3s_version ="${var.k3s_version}"
+        k3s_node_role ="storage" 
         k3s_cluster_controller = "${libvirt_domain.kube-master.0.network_interface.0.addresses.0}"
       }
     }
@@ -74,6 +78,6 @@ resource "libvirt_domain" "kube-node" {
 }
 
 
-output "node-IPs" {
-  value = libvirt_domain.kube-node.*.network_interface.0.addresses.0
+output "storage-IPs" {
+  value = libvirt_domain.kube-storage-node.*.network_interface.0.addresses.0
 }

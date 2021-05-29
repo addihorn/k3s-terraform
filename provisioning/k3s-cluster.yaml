@@ -1,3 +1,4 @@
+
 ---
 
 - hosts: all
@@ -9,19 +10,24 @@
       dest: /tmp/install-k3s.sh
       mode: "777"
 
+  - name : "Install longhorn-dependencies"
+    dnf:
+      name:
+      - iscsi-initiator-utils
+      - nfs-utils
+      state: latest
+
 
 - hosts: "k3s_init_master"
   tasks:
-
   - name: "Install K3S Cluster Controller"
-  
     shell:
       argv:
       - K3S_KUBECONFIG_MODE=644
       - K3S_TOKEN={{ k3s_token }}
       - INSTALL_K3S_VERSION={{ k3s_version }}
-      - /tmp/install-k3s.sh 
-      - server 
+      - /tmp/install-k3s.sh
+      - server
       - --cluster-init
 
   - name: "Fetch CA"
@@ -29,7 +35,7 @@
       src: "/var/lib/rancher/k3s/server/tls/server-ca.crt"
       dest: output/
       flat: yes
-    become: true  
+    become: true
 
   - name: "Fetch CRT"
     fetch:
@@ -43,18 +49,18 @@
       src: "/var/lib/rancher/k3s/server/tls/client-admin.key"
       dest: "output/"
       flat: yes
-    become: true  
+    become: true
 
   - name: "Create kubeconfig file"
     template:
       src: "kubeconfig.j2"
       dest: "output/kubeconfig.yaml"
     delegate_to: "localhost"
-  
+
 
 
 - hosts: "k3s_masters:!k3s_init_master"
-  tasks: 
+  tasks:
   - name: "Install K3S Master Set"
     shell:
       argv:
@@ -65,8 +71,9 @@
       - /tmp/install-k3s.sh
       - server
 
+
 - hosts: "k3s_nodes"
-  tasks: 
+  tasks:
   - name: "Install K3S Node"
     shell:
       argv:
@@ -74,6 +81,8 @@
       - K3S_TOKEN={{ k3s_token }}
       - INSTALL_K3S_VERSION={{ k3s_version }}
       - K3S_URL=https://{{ k3s_cluster_controller | default('localhost') }}:6443
-      - /tmp/install-k3s.sh  
+      - /tmp/install-k3s.sh
+      - --node-label
+      - node.role={{ k3s_node_role | default('worker') }}
 
 ...

@@ -1,0 +1,61 @@
+
+---
+
+- hosts: localhost
+  tasks:
+  - name: "Install python dependencies"
+    pip:
+      name:
+      - openshift
+      - kubernetes-validate
+
+  - name: "Download Cer-Manager CRD Manifest"
+    ansible.builtin.get_url:
+      url: "https://github.com/jetstack/cert-manager/releases/download/v1.0.4/cert-manager.crds.yaml"
+      dest: output/cert-manager.crds.yaml
+      mode: '0664'
+  - name: "Install Cert-Manager CRD"
+    community.kubernetes.k8s:
+      state: present
+      src: output/cert-manager.crds.yaml
+      validate:
+        fail_on_error: no
+
+  - name: "Add stable cert-manager repo chart"
+    community.kubernetes.helm_repository:
+      name: "jetstack"
+      repo_url: "https://charts.jetstack.io"
+
+  - name: "Install Cert-Manager"
+    community.kubernetes.helm:
+      update_repo_cache: true
+      name: cert-manager
+      chart_ref: jetstack/cert-manager
+      chart_version: v1.0.4
+      release_namespace: cert-manager
+      create_namespace: true
+      state: present
+      wait: true
+
+#- hosts: "!localhost"
+#  tasks:
+  - name: "Add latest Rancher repo chart"
+    community.kubernetes.helm_repository:
+      name: "rancher-latest"
+      repo_url: "https://releases.rancher.com/server-charts/latest"
+
+  - name: "Deploy Rancher"
+    community.kubernetes.helm:
+      update_repo_cache: true
+      name: rancher
+      chart_ref: rancher-latest/rancher
+      namespace: cattle-system
+      create_namespace: true
+      values:
+        hostname: rancher.homenet
+      state: present
+      wait: true
+
+
+...
+

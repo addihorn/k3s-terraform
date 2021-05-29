@@ -8,8 +8,8 @@ resource "libvirt_volume" "k3s-master-disk" {
   count = var.master_count
   name = "kube-master-${count.index +1}"
   pool = "ssd"
-  source = "https://cloud.centos.org/centos/8-stream/x86_64/images/CentOS-Stream-GenericCloud-8-20201217.0.x86_64.qcow2"
   format = "qcow2"
+  base_volume_id = libvirt_volume.base-disk-image.id
 }
 
 
@@ -18,7 +18,7 @@ resource "libvirt_volume" "k3s-master-disk" {
 resource "libvirt_domain" "kube-master" {
   count  = var.master_count
   name   = "kube-master-${count.index + 1}"
-  memory = "2096"
+  memory = "5120"
   vcpu   = 1
  
   network_interface {
@@ -67,7 +67,7 @@ resource "libvirt_domain" "kube-master" {
     ansible_ssh_settings {
       connect_timeout_seconds = 10
       connection_attempts = 10
-      ssh_keyscan_timeout = 180
+      ssh_keyscan_timeout = 300
 #      insecure_no_strict_host_key_checking = true
     }
   }
