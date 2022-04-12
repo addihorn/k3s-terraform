@@ -1,0 +1,57 @@
+
+---
+
+- hosts: localhost
+  tasks:
+  - name: "Install python dependencies"
+    pip:
+      name:
+      - openshift
+      - kubernetes-validate
+
+  - name: "Download Calico Installer"
+    ansible.builtin.get_url:
+      url: "https://docs.projectcalico.org/master/manifests/flannel-migration/calico.yaml"
+      dest: output/flannel-migration.calico.yaml
+      mode: '0664'
+
+  - name: "Download Calico Migration Job"
+    ansible.builtin.get_url:
+      url: "https://docs.projectcalico.org/master/manifests/flannel-migration/migration-job.yaml"
+      dest: output/flannel-migration.migration-job.yaml
+      mode: '0664'
+
+  - name: "Install Calico"
+    community.kubernetes.k8s:
+      state: present
+      src: output/flannel-migration.calico.yaml
+      validate:
+        fail_on_error: no
+
+  - name: "Start Migration Job"
+    community.kubernetes.k8s:
+      state: present
+      src: output/flannel-migration.migration-job.yaml
+      validate:
+        fail_on_error: no
+
+  - name: "Wait for Migration to finish"
+    community.kubernetes.k8s:
+      name: flannel-migration
+      namespace: kube-system
+      kind: Job
+      wait: yes
+      wait_timeout: 900
+      wait_condition:
+        type: Complete
+        status: "True"
+
+  - name: "Delete Migration Job Controller"
+    community.kubernetes.k8s:
+      state: absent
+      src: output/flannel-migration.migration-job.yaml
+      validate:
+        fail_on_error: no
+
+...
+

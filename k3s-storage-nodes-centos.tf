@@ -12,7 +12,7 @@ resource "libvirt_volume" "k3s-storage-node-disk" {
   format = "qcow2"
 # 50GB Drive per Node
   size = 50000000000
-  base_volume_id = libvirt_volume.base-disk-image.id
+  base_volume_id = libvirt_volume.centos-base-image.id
 }
 
 

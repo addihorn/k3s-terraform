@@ -1,21 +1,37 @@
 
 ---
-
 - hosts: all
   become: yes
   tasks:
+
+  - name: "Upgrade System - Ubuntu"
+    when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+    apt:
+      upgrade: full
+
   - name: "Get K3S Install file"
     get_url:
       url: https://get.k3s.io/
       dest: /tmp/install-k3s.sh
       mode: "777"
 
-  - name : "Install longhorn-dependencies"
+  - name : "Install longhorn-dependencies - Centos"
     dnf:
       name:
       - iscsi-initiator-utils
       - nfs-utils
       state: latest
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+  - name:  "Install longhorn-dependencies - Ubuntu"
+    apt:
+      force_apt_get: true
+#      update_cache: true
+      name:
+      - open-iscsi
+#      - nfs-common
+      state: latest
+    when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
 
 
 - hosts: "k3s_init_master"
@@ -56,8 +72,6 @@
       src: "kubeconfig.j2"
       dest: "output/kubeconfig.yaml"
     delegate_to: "localhost"
-
-
 
 - hosts: "k3s_masters:!k3s_init_master"
   tasks:

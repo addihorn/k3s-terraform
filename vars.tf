@@ -7,7 +7,7 @@ variable "k3s_agent_token" {
 
 variable "k3s_version" {
   type = string
-  default = "v1.20.7+k3s1"
+  default = "v1.22.5+k3s1"
 }
 
 

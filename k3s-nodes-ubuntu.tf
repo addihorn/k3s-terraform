@@ -1,34 +1,35 @@
 
-variable "master_count" {
+variable "node_ubuntu_count" {
   type = number
   default = 1
 }
 
-resource "libvirt_volume" "k3s-master-disk" {
-  count = var.master_count
-  name = "kube-master-${count.index +1}"
+resource "libvirt_volume" "ubuntu-node-disk" {
+  count = var.node_ubuntu_count
+  name = "ubuntu-node-${count.index +1}"
   pool = "ssd"
   format = "qcow2"
-  base_volume_id = libvirt_volume.centos-base-image.id
+  size = 50000000000
+  base_volume_id = libvirt_volume.ubuntu-base-image.id
 }
 
 
 # Create Host for Master
 # Define KVM domain to create
-resource "libvirt_domain" "kube-master" {
-  count  = var.master_count
-  name   = "kube-master-${count.index + 1}"
-  memory = "5120"
-  vcpu   = 1
+resource "libvirt_domain" "ubuntu-node" {
+  count  = var.node_ubuntu_count
+  name   = "ubuntu-node-${count.index + 1}"
+  memory = "10000"
+  vcpu   = 2
  
   network_interface {
     network_name = "default"
-    addresses = ["192.168.122.${count.index + 101}"]
+    addresses = ["192.168.122.${count.index + 41}"]
     wait_for_lease = true
   }
  
   disk {
-    volume_id = libvirt_volume.k3s-master-disk[count.index].id
+    volume_id = libvirt_volume.ubuntu-node-disk[count.index].id
   }
  
   cloudinit = libvirt_cloudinit_disk.commoninit.id
@@ -56,8 +57,8 @@ resource "libvirt_domain" "kube-master" {
       playbook {
         file_path = "${path.root}/provisioning/k3s-cluster.yaml"
       }
-      hosts = ( count.index == 0 ? ["k3s_init_master"] : [] )
-      groups = ["k3s_masters"]
+      hosts = []
+      groups = ["k3s_nodes"]
       extra_vars = {
         k3s_token = "${var.k3s_agent_token}"
         k3s_version ="${var.k3s_version}" 
@@ -74,6 +75,6 @@ resource "libvirt_domain" "kube-master" {
 }
 
 
-output "Master-IPs" {
-  value = libvirt_domain.kube-master.*.network_interface.0.addresses.0
+output "Ubuntu-Node-IPs" {
+  value = libvirt_domain.ubuntu-node.*.network_interface.0.addresses.0
 }

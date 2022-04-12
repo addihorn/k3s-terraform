@@ -3,9 +3,7 @@ resource "null_resource" "install-rancher" {
 
   # this should run at the very end, when the k3s-cluster is up
   depends_on = [
-    libvirt_domain.kube-master,
-    libvirt_domain.kube-node,
-    libvirt_domain.kube-storage-node
+    null_resource.migrate-calico
   ]
 
   provisioner "ansible" {

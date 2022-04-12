@@ -1,34 +1,34 @@
 
-variable "node_count" {
+variable "node_centos_count" {
   type = number
   default = 1
 }
 
-resource "libvirt_volume" "k3s-node-disk" {
-  count = var.node_count
-  name = "kube-node-${count.index +1}"
+resource "libvirt_volume" "centos-node-disk" {
+  count = var.node_centos_count
+  name = "centos-node-${count.index +1}"
   pool = "ssd"
   format = "qcow2"
-  base_volume_id = libvirt_volume.base-disk-image.id
+  base_volume_id = libvirt_volume.centos-base-image.id
 }
 
 
 # Create Host for Master
 # Define KVM domain to create
-resource "libvirt_domain" "kube-node" {
-  count  = var.node_count
-  name   = "kube-node-${count.index + 1}"
+resource "libvirt_domain" "centos-node" {
+  count  = var.node_centos_count
+  name   = "centos-node-${count.index + 1}"
   memory = "10000"
   vcpu   = 2
  
   network_interface {
     network_name = "default"
-    addresses = ["192.168.122.${count.index + 51}"]
+    addresses = ["192.168.122.${count.index + 21}"]
     wait_for_lease = true
   }
  
   disk {
-    volume_id = libvirt_volume.k3s-node-disk[count.index].id
+    volume_id = libvirt_volume.centos-node-disk[count.index].id
   }
  
   cloudinit = libvirt_cloudinit_disk.commoninit.id
@@ -74,6 +74,6 @@ resource "libvirt_domain" "kube-node" {
 }
 
 
-output "node-IPs" {
-  value = libvirt_domain.kube-node.*.network_interface.0.addresses.0
+output "CentOS-Node-IPs" {
+  value = libvirt_domain.centos-node.*.network_interface.0.addresses.0
 }
